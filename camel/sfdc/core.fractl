@@ -6,6 +6,7 @@
               [fractl.util :as u]
               [fractl.store.util :as stu]
               [fractl.component :as cn]
+              [fractl.evaluator :as ev]
               [fractl.lang.internal :as li]
               [fractl.datafmt.json :as json]
               [fractl.resolver.core :as r]
@@ -17,19 +18,21 @@
 
 (entity
  :Config
- {:InstanceUrl :String
+ {:meta {:inherits :Fractl.Kernel.Lang/Config}
+  :InstanceUrl :String
   :ClientId :String
   :ClientSecret :String})
 
 (defn ^Component make-component [config]
   (let [^SalesforceComponent sfc (SalesforceComponent.)
-        inst-url (or (:InstanceUrl config) (u/getenv "SFDC_INSTANCE_URL"))]
-    (.setClientId sfc (or (:ClientId config) (u/getenv "SFDC_CLIENT_ID")))
-    (.setClientSecret sfc (or (:ClientSecret config) (u/getenv "SFDC_CLIENT_SECRET")))
-    (.setAuthenticationType sfc (AuthenticationType/valueOf "CLIENT_CREDENTIALS"))
-    (.setInstanceUrl sfc inst-url)
-    (.setLoginUrl sfc inst-url)
-    sfc))
+        inst-url (or (:InstanceUrl config) (u/getenv "SFDC_INSTANCE_URL" ""))]
+    (when (seq inst-url)
+      (.setClientId sfc (or (:ClientId config) (u/getenv "SFDC_CLIENT_ID")))
+      (.setClientSecret sfc (or (:ClientSecret config) (u/getenv "SFDC_CLIENT_SECRET")))
+      (.setAuthenticationType sfc (AuthenticationType/valueOf "CLIENT_CREDENTIALS"))
+      (.setInstanceUrl sfc inst-url)
+      (.setLoginUrl sfc inst-url)
+      sfc)))
 
 (def ^:private endpoint-templates
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
@@ -129,12 +132,13 @@
   (swap! registered-paths conj (li/split-path path))
   path)
 
-(defn register [config-inst]
-  (rg/register-resolver-type
+(fractl.util.core/set-on-init!
+ #(rg/register-resolver-type
    :camel-salesforce
    (fn [_ _]
-     (let [c (make-component config-inst)]
-       (subscribe-to-change-events c)
+     (let [config-inst (ev/fetch-model-config-instance "camel-sfdc-resolver")
+           c (make-component config-inst)]
+       (when c (subscribe-to-change-events c))
        (r/make-resolver
         :camel-salesforce
         {:create (partial sf-create c)

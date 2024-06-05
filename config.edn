@@ -1,0 +1,4 @@
+{:service {:port 8000}
+ :Camel.Sfdc.Core/Config {:InstanceUrl #$ SFDC_INSTANCE_URL
+                          :ClientSecret #$ SFDC_CLIENT_SECRET
+                          :ClientId #$ SFDC_CLIENT_ID}}

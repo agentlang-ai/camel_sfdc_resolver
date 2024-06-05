@@ -1,0 +1,20 @@
+(component :Salesforce)
+
+(entity
+ :Quote
+ {:meta {:inferred true}})
+
+(dataflow
+ [:after :create :Quote]
+ [:eval '(println "Created: " :Instance)])
+
+(dataflow
+ [:after :delete :Quote]
+ [:eval '(println "Deleted: " :Instance)])
+
+(require '[camel_sfdc_resolver.core])
+
+(fractl.util.core/set-on-init!
+ #(resolver
+   :salesforce-resolver
+   {:type :camel-salesforce :paths [:Salesforce/Quote]}))

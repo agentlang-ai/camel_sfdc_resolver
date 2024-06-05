@@ -1,0 +1,4 @@
+{:name "sfdc"
+ :fractl-version "0.5.1"
+ :components [:Salesforce]
+ :dependencies '[[camel-sfdc-resolver "0.0.1"]]}
