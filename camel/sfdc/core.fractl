@@ -1,27 +1,31 @@
-(ns camel-sfdc.resolver
-  (:require [clojure.string :as s]
-            [selmer.parser :as st]
-            [fractl.util :as u]
-            [fractl.store.util :as stu]
-            [fractl.component :as cn]
-            [fractl.lang.internal :as li]
-            [fractl.datafmt.json :as json]
-            [fractl.resolver.core :as r]
-            [fractl.resolver.registry :as rg]
-            [fractl.evaluator :as ev]
-            [fractl.resolver.camel.core :as camel])
-  (:import [org.apache.camel Component]
-           [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType]))
+(component
+ :Camel.Sfdc.Core
+ {:clj-import
+  '[(:require [clojure.string :as s]
+              [selmer.parser :as st]
+              [fractl.util :as u]
+              [fractl.store.util :as stu]
+              [fractl.component :as cn]
+              [fractl.lang.internal :as li]
+              [fractl.datafmt.json :as json]
+              [fractl.resolver.core :as r]
+              [fractl.resolver.registry :as rg]
+              [fractl.evaluator :as ev]
+              [fractl.resolver.camel.core :as camel])
+    (:import [org.apache.camel Component]
+             [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])]})
+
+(entity
+ :Config
+ {:InstanceUrl :String
+  :ClientId :String
+  :ClientSecret :String})
 
 (defn ^Component make-component [config]
   (let [^SalesforceComponent sfc (SalesforceComponent.)
-        config (or (:salesforce config) config)
-        inst-url (or (:instance-url config)
-                     (u/getenv "SFDC_INSTANCE_URL"))]
-    (.setClientId sfc (or (:client-id config)
-                          (u/getenv "SFDC_CLIENT_ID")))
-    (.setClientSecret sfc (or (:client-secret config)
-                              (u/getenv "SFDC_CLIENT_SECRET")))
+        inst-url (or (:InstanceUrl config) (u/getenv "SFDC_INSTANCE_URL"))]
+    (.setClientId sfc (or (:ClientId config) (u/getenv "SFDC_CLIENT_ID")))
+    (.setClientSecret sfc (or (:ClientSecret config) (u/getenv "SFDC_CLIENT_SECRET")))
     (.setAuthenticationType sfc (AuthenticationType/valueOf "CLIENT_CREDENTIALS"))
     (.setInstanceUrl sfc inst-url)
     (.setLoginUrl sfc inst-url)
@@ -125,13 +129,14 @@
   (swap! registered-paths conj (li/split-path path))
   path)
 
-(rg/register-resolver-type
- :camel-salesforce
- (fn [_ _]
-   (let [c (make-component nil)]
-     (subscribe-to-change-events c)
-     (r/make-resolver
-      :camel-salesforce
-      {:create (partial sf-create c)
-       :query (partial sf-query c)
-       :on-set-path sf-on-set-path}))))
+(defn register [config-inst]
+  (rg/register-resolver-type
+   :camel-salesforce
+   (fn [_ _]
+     (let [c (make-component config-inst)]
+       (subscribe-to-change-events c)
+       (r/make-resolver
+        :camel-salesforce
+        {:create (partial sf-create c)
+         :query (partial sf-query c)
+         :on-set-path sf-on-set-path})))))
