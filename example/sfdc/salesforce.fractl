@@ -19,7 +19,6 @@
 
 (require '[camel_sfdc_resolver.core])
 
-(fractl.util.core/set-on-init!
- #(resolver
-   :salesforce-resolver
-   {:type :camel-salesforce :paths [:Salesforce/Quote]}))
+(resolver
+ :local-resolver
+ {:type :camel-salesforce :paths [:Salesforce/Quote]})
