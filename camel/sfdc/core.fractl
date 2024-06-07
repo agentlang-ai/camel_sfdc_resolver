@@ -9,8 +9,6 @@
               [fractl.evaluator :as ev]
               [fractl.lang.internal :as li]
               [fractl.datafmt.json :as json]
-              [fractl.resolver.core :as r]
-              [fractl.resolver.registry :as rg]
               [fractl.evaluator :as ev]
               [fractl.resolver.camel.core :as camel])
     (:import [org.apache.camel Component]
@@ -23,23 +21,29 @@
   :ClientId :String
   :ClientSecret :String})
 
-(defn ^Component make-component [config]
-  (let [^SalesforceComponent sfc (SalesforceComponent.)
-        inst-url (or (:InstanceUrl config) (u/getenv "SFDC_INSTANCE_URL" ""))]
-    (when (seq inst-url)
-      (.setClientId sfc (or (:ClientId config) (u/getenv "SFDC_CLIENT_ID")))
-      (.setClientSecret sfc (or (:ClientSecret config) (u/getenv "SFDC_CLIENT_SECRET")))
-      (.setAuthenticationType sfc (AuthenticationType/valueOf "CLIENT_CREDENTIALS"))
-      (.setInstanceUrl sfc inst-url)
-      (.setLoginUrl sfc inst-url)
-      sfc)))
+(def component-cache (atom nil))
+
+(defn ^Component get-component []
+  (or @component-cache
+      (let [config (ev/fetch-model-config-instance "camel-sfdc-resolver")
+            ^SalesforceComponent sfc (SalesforceComponent.)
+            inst-url (:InstanceUrl config)]
+        (when (seq inst-url)
+          (.setClientId sfc (:ClientId config))
+          (.setClientSecret sfc (:ClientSecret config))
+          (.setAuthenticationType sfc (AuthenticationType/valueOf "CLIENT_CREDENTIALS"))
+          (.setInstanceUrl sfc inst-url)
+          (.setLoginUrl sfc inst-url)
+          (reset! component-cache sfc)
+          sfc))))
 
 (def ^:private endpoint-templates
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
    :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"})
 
-(defn- sf-create [camel-component instance]
-  (let [[_ n] (li/split-path (cn/instance-type instance))
+(defn- sf-create [instance]
+  (let [camel-component (get-component)
+        [_ n] (li/split-path (cn/instance-type instance))
         ep (st/render (:create endpoint-templates) {:sObjectName (name n)})
         result (camel/exec-route {:endpoint ep
                                   :user-arg (json/encode
@@ -75,8 +79,9 @@
                (str p))))
           sql params))
 
-(defn- sf-query [camel-component [entity-name {clause :where} :as param]]
-  (let [soql (cond
+(defn- sf-query [[entity-name {clause :where} :as param]]
+  (let [camel-component (get-component)
+        soql (cond
                (or (= clause :*) (nil? (seq clause)))
                (lookup-all entity-name)
 
@@ -116,15 +121,16 @@
     (when entity-name
       [tag entity-name (cn/make-instance {entity-name payload})])))
 
-(defn- subscribe-to-change-events [camel-component]
+(defn- subscribe-to-change-events []
   (camel/exec-route
    {:endpoint "salesforce:subscribe:/data/ChangeEvents?rawPayload=true"
-    :camel-component camel-component
+    :camel-component (get-component)
     :callback #(let [r (json/decode %)
                      [tag entity-name inst :as cinfo] (crud-info r)]
                  (when cinfo
                    (cn/force-fire-post-event ev/eval-all-dataflows tag entity-name inst)))}
-   false))
+   false)
+  true)
 
 (defn- sf-on-set-path [[tag path]]
   (when (= tag :override)
@@ -132,15 +138,10 @@
   (swap! registered-paths conj (li/split-path path))
   path)
 
-(fractl.util.core/set-on-init!
- #(rg/register-resolver-type
-   :camel-salesforce
-   (fn [_ _]
-     (let [config-inst (ev/fetch-model-config-instance "camel-sfdc-resolver")
-           c (make-component config-inst)]
-       (when c (subscribe-to-change-events c))
-       (r/make-resolver
-        :camel-salesforce
-        {:create (partial sf-create c)
-         :query (partial sf-query c)
-         :on-set-path sf-on-set-path})))))
+(resolver
+ :camel-salesforce
+ {:require {:pre-cond subscribe-to-change-events}
+  :with-methods
+  {:create sf-create
+   :query sf-query
+   :on-set-path sf-on-set-path}})
