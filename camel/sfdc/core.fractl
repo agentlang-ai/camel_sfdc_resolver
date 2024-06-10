@@ -1,7 +1,7 @@
 (component
  :Camel.Sfdc.Core
  {:clj-import
-  '[(:require [clojure.string :as s]
+  (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
               [fractl.util :as u]
               [fractl.store.util :as stu]
@@ -12,7 +12,7 @@
               [fractl.evaluator :as ev]
               [fractl.resolver.camel.core :as camel])
     (:import [org.apache.camel Component]
-             [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])]})
+             [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])])})
 
 (entity
  :Config
