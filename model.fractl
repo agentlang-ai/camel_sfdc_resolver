@@ -1,4 +1,4 @@
-{:name "camel-sfdc-resolver"
+{:name :SalesforceResolver
  :version "0.0.1"
  :fractl-version "0.5.1"
  :dependencies '[[com.github.fractl-io/fractl "0.5.1"]
@@ -6,5 +6,5 @@
                  [org.apache.camel/camel-jackson "4.6.0"]
                  [org.apache.camel/camel-salesforce "4.6.0"]
                  [com.github.fractl-io/camel-resolver "0.0.1"]]
- :components [:Camel.Sfdc.Core]
- :config-entity :Camel.Sfdc.Core/Config}
+ :components [:SalesforceResolver.Core]
+ :config-entity :SalesforceResolver.Core/Config}
