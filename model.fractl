@@ -1,8 +1,7 @@
 {:name "camel-sfdc-resolver"
  :version "0.0.1"
- :fractl-version "0.5.1"
- :dependencies '[[com.github.fractl-io/fractl "0.5.1"]
-                 [org.apache.camel/camel-main "4.6.0"]
+ :fractl-version "0.5.2"
+ :dependencies '[[org.apache.camel/camel-main "4.6.0"]
                  [org.apache.camel/camel-jackson "4.6.0"]
                  [org.apache.camel/camel-salesforce "4.6.0"]
                  [com.github.fractl-io/camel-resolver "0.0.1"]]
