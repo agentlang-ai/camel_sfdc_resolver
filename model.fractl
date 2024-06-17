@@ -1,4 +1,4 @@
-{:name "camel-sfdc-resolver"
+{:name :camel-sfdc-resolver
  :version "0.0.1"
  :fractl-version "0.5.2"
  :dependencies '[[org.apache.camel/camel-main "4.6.0"]

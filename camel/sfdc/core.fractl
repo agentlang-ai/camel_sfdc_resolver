@@ -1,7 +1,7 @@
 (component
  :Camel.Sfdc.Core
  {:clj-import
-  '[(:require [clojure.string :as s]
+  (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
               [fractl.util :as u]
               [fractl.store.util :as stu]
@@ -12,7 +12,7 @@
               [fractl.evaluator :as ev]
               [fractl.resolver.camel.core :as camel])
     (:import [org.apache.camel Component]
-             [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])]})
+             [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])])})
 
 (entity
  :Config
@@ -37,11 +37,11 @@
           (reset! component-cache sfc)
           sfc))))
 
-(def ^:private endpoint-templates
+(def endpoint-templates
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
    :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"})
 
-(defn- sf-create [instance]
+(defn sf-create [instance]
   (let [camel-component (get-component)
         [_ n] (li/split-path (cn/instance-type instance))
         ep (st/render (:create endpoint-templates) {:sObjectName (name n)})
@@ -54,23 +54,23 @@
         r (when result (json/decode result))]
     (when (:success r) (assoc instance :Id (:id r)))))
 
-(defn- lookup-all [[_ sobj-name :as entity-name]]
+(defn lookup-all [[_ sobj-name :as entity-name]]
   (str "SELECT FIELDS(ALL) FROM " (name sobj-name) " LIMIT 200"))
 
-(defn- lookup-by-expr [[_ sobj-name :as entity-name]
+(defn lookup-by-expr [[_ sobj-name :as entity-name]
                        where-clause]
   (str "SELECT FIELDS(ALL) FROM " (name sobj-name)
        " WHERE " where-clause " LIMIT 200"))
 
-(defn- as-raw-sql-val [v]
+(defn as-raw-sql-val [v]
   (if (or (string? v) (number? v) (boolean? v))
     v
     (stu/encode-clj-object v)))
 
-(defn- as-sql-expr [[opr attr v]]
+(defn as-sql-expr [[opr attr v]]
   [(str (name attr) " " (name opr) " ?") [(as-raw-sql-val v)]])
 
-(defn- replace-placeholders [sql params]
+(defn replace-placeholders [sql params]
   (reduce (fn [s p]
             (s/replace-first
              s #"\?"
@@ -79,7 +79,7 @@
                (str p))))
           sql params))
 
-(defn- sf-query [[entity-name {clause :where} :as param]]
+(defn sf-query [[entity-name {clause :where} :as param]]
   (let [camel-component (get-component)
         soql (cond
                (or (= clause :*) (nil? (seq clause)))
@@ -107,13 +107,13 @@
                                   :camel-component camel-component})]
     (:records (json/decode result))))
 
-(def ^:private registered-paths (atom #{}))
+(def registered-paths (atom #{}))
 
-(defn- make-full-path [entity-name]
+(defn make-full-path [entity-name]
   (when-let [[c n] (first (filter (fn [[_ en]] (= entity-name en)) @registered-paths))]
     (li/make-path c n)))
 
-(defn- crud-info [subs-response]
+(defn crud-info [subs-response]
   (let [payload (get-in subs-response [:data :payload])
         evt (:ChangeEventHeader payload)
         tag (keyword (s/lower-case (:changeType evt)))
@@ -121,7 +121,7 @@
     (when entity-name
       [tag entity-name (cn/make-instance {entity-name payload})])))
 
-(defn- subscribe-to-change-events []
+(defn subscribe-to-change-events []
   (camel/exec-route
    {:endpoint "salesforce:subscribe:/data/ChangeEvents?rawPayload=true"
     :camel-component (get-component)
@@ -132,7 +132,7 @@
    false)
   true)
 
-(defn- sf-on-set-path [[tag path]]
+(defn sf-on-set-path [[tag path]]
   (when (= tag :override)
     (-> path cn/disable-post-events cn/with-external-schema))
   (swap! registered-paths conj (li/split-path path))
