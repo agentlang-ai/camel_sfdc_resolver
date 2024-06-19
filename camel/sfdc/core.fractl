@@ -104,8 +104,9 @@
             {:sObjectName (name n)})
         result (camel/exec-route {:endpoint ep
                                   :user-arg soql
-                                  :camel-component camel-component})]
-    (:records (json/decode result))))
+                                  :camel-component camel-component})
+        recs (:records (json/decode result))]
+    (mapv (partial cn/make-instance entity-name) recs)))
 
 (def registered-paths (atom #{}))
 
