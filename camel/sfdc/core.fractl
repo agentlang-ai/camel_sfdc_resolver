@@ -4,6 +4,7 @@
   (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
               [fractl.util :as u]
+              [fractl.util.logger :as log]
               [fractl.store.util :as stu]
               [fractl.component :as cn]
               [fractl.evaluator :as ev]
@@ -41,7 +42,10 @@
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
    :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"})
 
+(def ^:private log-prefix "sfdc resolver: ")
+
 (defn sf-create [instance]
+  (log/info (str log-prefix "create instance - " instance))
   (let [camel-component (get-component)
         [_ n] (li/split-path (cn/instance-type instance))
         ep (st/render (:create endpoint-templates) {:sObjectName (name n)})
@@ -52,6 +56,7 @@
                                               li/id-attr))
                                   :camel-component camel-component})
         r (when result (json/decode result))]
+    (log/debug (str log-prefix "create instance result - " result))
     (when (:success r) (assoc instance :Id (:id r)))))
 
 (defn lookup-all [[_ sobj-name :as entity-name]]
@@ -80,6 +85,7 @@
           sql params))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
+  (log/info (str log-prefix "query " param))
   (let [camel-component (get-component)
         soql (cond
                (or (= clause :*) (nil? (seq clause)))
@@ -102,9 +108,11 @@
         ep (st/render
             (:query endpoint-templates)
             {:sObjectName (name n)})
+        _ (log/debug (str log-prefix "generated SOQL - " soql))
         result (camel/exec-route {:endpoint ep
                                   :user-arg soql
                                   :camel-component camel-component})
+        _ (log/debug (str log-prefix "query result - " result))
         recs (:records (json/decode result))]
     (mapv (partial cn/make-instance entity-name) recs)))
 
@@ -129,6 +137,7 @@
     :callback #(let [r (json/decode %)
                      [tag entity-name inst :as cinfo] (crud-info r)]
                  (when cinfo
+                   (log/info (str log-prefix "change event for - " cinfo))
                    (cn/force-fire-post-event ev/eval-all-dataflows tag entity-name inst)))}
    false)
   true)
