@@ -20,5 +20,5 @@
 (require '[camel_sfdc_resolver.core])
 
 (resolver
- :local-resolver
- {:type :camel-salesforce :paths [:Salesforce/Quote]})
+ :Salesforce/Resolver
+ {:type :Camel.Sfdc.Core/Resolver :paths [:Salesforce/Quote]})

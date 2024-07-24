@@ -149,7 +149,7 @@
   path)
 
 (resolver
- :camel-salesforce
+ :Camel.Sfdc.Core/Resolver
  {:require {:pre-cond subscribe-to-change-events}
   :with-methods
   {:create sf-create

@@ -1,5 +1,5 @@
 {:name "sfdc"
- :fractl-version "0.5.1"
+ :fractl-version "0.5.3"
  :components [:Salesforce]
- :dependencies '[[camel_sfdc_resolver "0.0.1"]
-                 [camel_googlesheets_resolver "0.0.1"]]}
+ :dependencies '[[camel-sfdc-resolver "0.0.1"]
+                 [camel-googlesheets-resolver "0.0.1"]]}
