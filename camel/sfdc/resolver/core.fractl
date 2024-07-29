@@ -1,5 +1,5 @@
 (component
- :Camel.Sfdc.Core
+ :Camel.Sfdc.Resolver.Core
  {:clj-import
   (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
@@ -149,7 +149,7 @@
   path)
 
 (resolver
- :Camel.Sfdc.Core/Resolver
+ :Camel.Sfdc.Resolver.Core/Resolver
  {:require {:pre-cond subscribe-to-change-events}
   :with-methods
   {:create sf-create
