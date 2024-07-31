@@ -19,6 +19,7 @@
  :Config
  {:meta {:inherits :Fractl.Kernel.Lang/Config}
   :InstanceUrl :String
+  :ApexEndpoint :String
   :ClientId :String
   :ClientSecret :String})
 
@@ -40,7 +41,8 @@
 
 (def endpoint-templates
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
-   :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"})
+   :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
+   :apexCall "salesforce:apexCall{{restEndpoint}}/v3/OrderPreValidation?apexMethod=GET&rawPayload=true"})
 
 (def ^:private log-prefix "sfdc resolver: ")
 
@@ -83,6 +85,22 @@
                (str "'" p "'")
                (str p))))
           sql params))
+
+(defn sf-apex-query [[entity-name {clause :where} :as param]]
+  (let [config (ev/fetch-model-config-instance "camel-sfdc-resolver")
+        apex-endpoint (:ApexEndpoint config)
+        k (second clause)
+        v (last clause)
+        _ (log/info (str log-prefix "sf-apex-query " entity-name clause apex-endpoint))
+        res (json/decode
+             (camel/exec-route
+              {:endpoint
+               (st/render
+                (:apexCall endpoint-templates)
+                {:restEndpoint apex-endpoint})
+               :user-arg {(name k) v}
+               :camel-component (get-component)}))]
+    [(assoc res k v)]))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
   (log/info (str log-prefix "query " param))
@@ -155,3 +173,9 @@
   {:create sf-create
    :query sf-query
    :on-set-path sf-on-set-path}})
+
+(resolver
+ :camel-salesforce-apex
+ {:require {:pre-cond subscribe-to-change-events}
+  :with-methods
+  {:query sf-apex-query}})
