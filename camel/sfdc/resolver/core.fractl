@@ -26,7 +26,7 @@
 
 (defn ^Component get-component []
   (or @component-cache
-      (let [config (ev/fetch-model-config-instance "camel-sfdc-resolver")
+      (let [config (ev/fetch-model-config-instance :Camel.Sfdc.Resolver)
             ^SalesforceComponent sfc (SalesforceComponent.)
             inst-url (:InstanceUrl config)]
         (when (seq inst-url)
