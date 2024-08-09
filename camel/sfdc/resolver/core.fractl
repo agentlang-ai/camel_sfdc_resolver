@@ -175,7 +175,7 @@
    :on-set-path sf-on-set-path}})
 
 (resolver
- :camel-salesforce-apex
+ :Camel.Sfdc.Resolver.Core/ApexResolver
  {:require {:pre-cond subscribe-to-change-events}
   :with-methods
   {:query sf-apex-query}})
