@@ -87,7 +87,7 @@
           sql params))
 
 (defn sf-apex-query [[entity-name {clause :where} :as param]]
-  (let [config (ev/fetch-model-config-instance "camel-sfdc-resolver")
+  (let [config (ev/fetch-model-config-instance :Camel.Sfdc.Resolver)
         apex-endpoint (:ApexEndpoint config)
         k (second clause)
         v (last clause)
