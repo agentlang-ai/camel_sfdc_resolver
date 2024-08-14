@@ -42,7 +42,7 @@
 (def endpoint-templates
   {:create "salesforce:createSObject?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
    :query "salesforce:query?apiVersion=59.0&rawPayload=true&format=JSON&sObjectName={{sObjectName}}"
-   :apexCall "salesforce:apexCall{{restEndpoint}}/v3/OrderPreValidation?apexMethod=GET&rawPayload=true"})
+   :apexCall "salesforce:apexCall{{restEndpoint}}/v3/OrderPreValidation?apexMethod=POST&rawPayload=true"})
 
 (def ^:private log-prefix "sfdc resolver: ")
 
@@ -98,7 +98,7 @@
                (st/render
                 (:apexCall endpoint-templates)
                 {:restEndpoint apex-endpoint})
-               :user-arg {(name k) v}
+               :user-arg (json/encode {k v})
                :camel-component (get-component)}))]
     [(assoc res k v)]))
 
