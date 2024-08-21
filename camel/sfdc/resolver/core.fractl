@@ -4,7 +4,7 @@
   (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
               [fractl.util :as u]
-              [fractl.util.logger :as log]
+              [fractl.util.logger :as log] 
               [fractl.store.util :as stu]
               [fractl.component :as cn]
               [fractl.evaluator :as ev]
@@ -100,7 +100,10 @@
                 {:restEndpoint apex-endpoint})
                :user-arg (json/encode {k v})
                :camel-component (get-component)}))]
-    [(assoc res k v)]))
+    
+    (if (= (:status res) "Success")
+      [(assoc res k v)]
+      (u/throw-ex (:errorDescription (:error res))))))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
   (log/info (str log-prefix "query " param))
