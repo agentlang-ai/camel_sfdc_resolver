@@ -22,7 +22,7 @@
   :ApexEndpoint :String
   :ClientId :String
   :ClientSecret :String})
-
+ 
 (def component-cache (atom nil))
 
 (defn ^Component get-component []
@@ -102,7 +102,7 @@
                :camel-component (get-component)}))]
     
     (if (= (:status res) "Success")
-      [(assoc res k v)]
+      [(cn/make-instance entity-name (assoc res k v))]
       (u/throw-ex (:errorDescription (:error res))))))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
