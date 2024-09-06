@@ -6,4 +6,4 @@
                                   :RefreshToken #$ GOOGLE_SHEETS_REFRESH_TOKEN
                                   :ClientId #$ GOOGLE_SHEETS_CLIENT_ID
                                   :ClientSecret #$ GOOGLE_SHEETS_CLIENT_SECRET
-                                  :ApplicationName "fractl"}}
+                                  :ApplicationName "agentlang"}}

@@ -1,9 +1,9 @@
 {:name :Camel.Sfdc.Resolver
  :version "0.0.1"
- :fractl-version "0.5.4"
+ :agentlang-version "0.5.4"
  :dependencies (quote [[org.apache.camel/camel-main "4.6.0"]
                  [org.apache.camel/camel-jackson "4.6.0"]
                  [org.apache.camel/camel-salesforce "4.6.0"]
-                 [com.github.fractl-io/camel-resolver "0.0.1"]])
+                 [com.github.agentlang-ai/camel-resolver "0.0.1"]])
  :components [:Camel.Sfdc.Resolver.Core]
  :config-entity :Camel.Sfdc.Resolver.Core/Config}

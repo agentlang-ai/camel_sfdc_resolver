@@ -3,21 +3,21 @@
  {:clj-import
   (quote [(:require [clojure.string :as s]
               [selmer.parser :as st]
-              [fractl.util :as u]
-              [fractl.util.logger :as log] 
-              [fractl.store.util :as stu]
-              [fractl.component :as cn]
-              [fractl.evaluator :as ev]
-              [fractl.lang.internal :as li]
-              [fractl.datafmt.json :as json]
-              [fractl.evaluator :as ev]
-              [fractl.resolver.camel.core :as camel])
+              [agentlang.util :as u]
+              [agentlang.util.logger :as log] 
+              [agentlang.store.util :as stu]
+              [agentlang.component :as cn]
+              [agentlang.evaluator :as ev]
+              [agentlang.lang.internal :as li]
+              [agentlang.datafmt.json :as json]
+              [agentlang.evaluator :as ev]
+              [agentlang.resolver.camel.core :as camel])
     (:import [org.apache.camel Component]
              [org.apache.camel.component.salesforce SalesforceComponent AuthenticationType])])})
 
 (entity
  :Config
- {:meta {:inherits :Fractl.Kernel.Lang/Config}
+ {:meta {:inherits :Agentlang.Kernel.Lang/Config}
   :InstanceUrl :String
   :ApexEndpoint :String
   :ClientId :String
