@@ -19,7 +19,7 @@
  :Config
  {:meta {:inherits :Agentlang.Kernel.Lang/Config}
   :InstanceUrl :String
-  :ApexEndpoint :String
+  :ApexEndpoint {:type :String :optional true}
   :ClientId :String
   :ClientSecret :String})
  
@@ -89,6 +89,7 @@
 (defn sf-apex-query [[entity-name {clause :where} :as param]]
   (let [config (ev/fetch-model-config-instance :Camel.Sfdc.Resolver)
         apex-endpoint (:ApexEndpoint config)
+        _ (when-not apex-endpoint (u/throw-ex "SFDC ApexEndpoint is not set"))
         k (second clause)
         v (last clause)
         _ (log/info (str log-prefix "sf-apex-query " entity-name clause apex-endpoint))
@@ -151,16 +152,20 @@
     (when entity-name
       [tag entity-name (cn/make-instance {entity-name payload})])))
 
+(def ^:private subscribed (atom nil))
+
 (defn subscribe-to-change-events []
-  (camel/exec-route
-   {:endpoint "salesforce:subscribe:/data/ChangeEvents?rawPayload=true"
-    :camel-component (get-component)
-    :callback #(let [r (json/decode %)
-                     [tag entity-name inst :as cinfo] (crud-info r)]
-                 (when cinfo
-                   (log/info (str log-prefix "change event for - " cinfo))
-                   (cn/force-fire-post-event ev/eval-all-dataflows tag entity-name inst)))}
-   false)
+  (when-not @subscribed
+    (camel/exec-route
+     {:endpoint "salesforce:subscribe:/data/ChangeEvents?rawPayload=true"
+      :camel-component (get-component)
+      :callback #(let [r (json/decode %)
+                       [tag entity-name inst :as cinfo] (crud-info r)]
+                   (when cinfo
+                     (log/info (str log-prefix "change event for - " cinfo))
+                     (cn/force-fire-post-event ev/eval-all-dataflows tag entity-name inst)))}
+     false)
+    (reset! subscribed true))
   true)
 
 (defn sf-on-set-path [[tag path]]
