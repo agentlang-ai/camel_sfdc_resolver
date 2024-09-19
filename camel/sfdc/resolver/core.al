@@ -93,15 +93,16 @@
         k (second clause)
         v (last clause)
         _ (log/info (str log-prefix "sf-apex-query " entity-name clause apex-endpoint))
-        res (json/decode
-             (camel/exec-route
-              {:endpoint
-               (st/render
-                (:apexCall endpoint-templates)
-                {:restEndpoint apex-endpoint})
-               :user-arg (json/encode {k v})
-               :camel-component (get-component)}))]
-    
+        res (camel/exec-route
+             {:endpoint
+              (st/render
+               (:apexCall endpoint-templates)
+               {:restEndpoint apex-endpoint})
+              :user-arg (json/encode {k v})
+              :camel-component (get-component)})
+        _ (log/info (str log-prefix "sf-apex-query result " res))
+        res (json/decode res)]
+
     (if (= (:status res) "Success")
       [(cn/make-instance entity-name (assoc res k v))]
       (u/throw-ex (:errorDescription (:error res))))))
