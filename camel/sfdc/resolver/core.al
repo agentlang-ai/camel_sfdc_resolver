@@ -47,7 +47,7 @@
 (def ^:private log-prefix "sfdc resolver: ")
 
 (defn sf-create [instance]
-  (log/info (str log-prefix "create instance - " instance))
+  (log/debug (str log-prefix "create instance - " instance))
   (let [camel-component (get-component)
         [_ n] (li/split-path (cn/instance-type instance))
         ep (st/render (:create endpoint-templates) {:sObjectName (name n)})
@@ -92,7 +92,7 @@
         _ (when-not apex-endpoint (u/throw-ex "SFDC ApexEndpoint is not set"))
         k (second clause)
         v (last clause)
-        _ (log/info (str log-prefix "sf-apex-query " entity-name clause apex-endpoint))
+        _ (log/debug (str log-prefix "sf-apex-query " entity-name clause apex-endpoint))
         res (camel/exec-route
              {:endpoint
               (st/render
@@ -100,44 +100,51 @@
                {:restEndpoint apex-endpoint})
               :user-arg (json/encode {k v})
               :camel-component (get-component)})
-        _ (log/info (str log-prefix "sf-apex-query result " res))
+        _ (log/debug (str log-prefix "sf-apex-query result " res))
         res (json/decode res)]
-
     (if (= (:status res) "Success")
       [(cn/make-instance entity-name (assoc res k v))]
-      (u/throw-ex (:errorDescription (:error res))))))
+      (do (log/error (str log-prefix  "sf-apex-query error " 
+                          entity-name " - " clause " - " apex-endpoint "\nresponse: " res))
+        (u/throw-ex (:errorDescription (:error res)))))))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
-  (log/info (str log-prefix "query " param))
-  (let [camel-component (get-component)
-        soql (cond
-               (or (= clause :*) (nil? (seq clause)))
-               (lookup-all entity-name)
+  (log/debug (str log-prefix "query " param))
+  (try 
+    (let [camel-component (get-component)
+          soql (cond
+                 (or (= clause :*) (nil? (seq clause)))
+                 (lookup-all entity-name)
 
-               :else
-               (let [opr (first clause)
-                     where-clause (case opr
-                                    (:and :or)
-                                    (let [sql-exp (mapv as-sql-expr (rest clause))
-                                          exps (mapv first sql-exp)
-                                          params (flatten (mapv second sql-exp))]
-                                      (replace-placeholders
-                                       (s/join (str " " (s/upper-case (name opr)) " ") exps)
-                                       params))
-                                    (let [[s params] (as-sql-expr clause)]
-                                      (replace-placeholders s params)))]
-                 (lookup-by-expr entity-name where-clause)))
-        [_ n] entity-name
-        ep (st/render
-            (:query endpoint-templates)
-            {:sObjectName (name n)})
-        _ (log/debug (str log-prefix "generated SOQL - " soql))
-        result (camel/exec-route {:endpoint ep
-                                  :user-arg soql
-                                  :camel-component camel-component})
-        _ (log/debug (str log-prefix "query result - " result))
-        recs (:records (json/decode result))]
-    (mapv (partial cn/make-instance entity-name) recs)))
+                 :else
+                 (let [opr (first clause)
+                       where-clause (case opr
+                                      (:and :or)
+                                      (let [sql-exp (mapv as-sql-expr (rest clause))
+                                            exps (mapv first sql-exp)
+                                            params (flatten (mapv second sql-exp))]
+                                        (replace-placeholders
+                                         (s/join (str " " (s/upper-case (name opr)) " ") exps)
+                                         params))
+                                      (let [[s params] (as-sql-expr clause)]
+                                        (replace-placeholders s params)))]
+                   (lookup-by-expr entity-name where-clause)))
+          [_ n] entity-name
+          ep (st/render
+              (:query endpoint-templates)
+              {:sObjectName (name n)})
+          _ (log/debug (str log-prefix "generated SOQL - " soql))
+          result (camel/exec-route {:endpoint ep
+                                    :user-arg soql
+                                    :camel-component camel-component})
+          recs (:records (json/decode result))
+          _ (log/debug (str log-prefix "query result: " param "\nresponse: " result))]
+      (when (or (nil? recs) (empty? recs))
+        (log/error (str log-prefix "query empty result: " param "\nresponse: " result)))
+      (mapv (partial cn/make-instance entity-name) recs))
+      (catch Exception ex
+        (log/error (str log-prefix "query exception: " param "\nresponse: " ex))
+        (throw ex))))
 
 (def registered-paths (atom #{}))
 
