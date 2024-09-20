@@ -105,7 +105,7 @@
     (if (= (:status res) "Success")
       [(cn/make-instance entity-name (assoc res k v))]
       (do (log/error (str log-prefix  "sf-apex-query error " 
-                          entity-name " - " clause " - " apex-endpoint "\nresponse: " res))
+                          entity-name " - " clause " - " apex-endpoint " - response: " res))
         (u/throw-ex (:errorDescription (:error res)))))))
 
 (defn sf-query [[entity-name {clause :where} :as param]]
@@ -138,12 +138,12 @@
                                     :user-arg soql
                                     :camel-component camel-component})
           recs (:records (json/decode result))
-          _ (log/debug (str log-prefix "query result: " param "\nresponse: " result))]
+          _ (log/debug (str log-prefix "query result: " param " - response: " result))]
       (when (or (nil? recs) (empty? recs))
-        (log/error (str log-prefix "query empty result: " param "\nresponse: " result)))
+        (log/error (str log-prefix "query empty result: " param " - response: " result)))
       (mapv (partial cn/make-instance entity-name) recs))
       (catch Exception ex
-        (log/error (str log-prefix "query exception: " param "\nresponse: " ex))
+        (log/error (str log-prefix "query exception: " param " - response: " ex))
         (throw ex))))
 
 (def registered-paths (atom #{}))
