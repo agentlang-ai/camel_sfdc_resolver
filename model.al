@@ -1,6 +1,6 @@
 {:name :Camel.Sfdc.Resolver
  :version "0.0.1"
- :agentlang-version "0.6.0"
+ :agentlang-version "0.6.1-alpha3"
  :dependencies (quote [[org.apache.camel/camel-main "4.6.0"]
                  [org.apache.camel/camel-jackson "4.6.0"]
                  [org.apache.camel/camel-salesforce "4.6.0"]
